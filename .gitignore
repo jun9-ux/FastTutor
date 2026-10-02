@@ -1,0 +1,38 @@
+# Local settings and secrets
+.env
+.env.*
+!.env.example
+/backend/config.php
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+key.properties
+google-services.json
+GoogleService-Info.plist
+
+# Runtime data and dependencies
+/backend/uploads/
+/backend/log/
+/backend/vendor/
+node_modules/
+.dart_tool/
+build/
+coverage/
+.flutter-plugins-dependencies
+.gradle/
+.cxx/
+.idea/
+.vscode/
+*.iml
+*.log
+
+# Backups and exported documents
+*.zip
+*.rar
+*.7z
+*.docx
+*.pdf
+.DS_Store
+Thumbs.db

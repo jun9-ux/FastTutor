@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <g transform="translate(50,50) scale(0.98) translate(-53.5,-52.5)">
+    <!-- สายฟ้า: ชั้นหลัง (navy, เยื้อง) -->
+    <path d="M67,7 L29,57 L49,57 L37,101 L81,43 L57,43 Z" fill="#1B3A5C" />
+    <!-- สายฟ้า: ชั้นหลัก (blue) -->
+    <path d="M63,4 L25,54 L45,54 L33,98 L77,40 L53,40 Z" fill="#2E86C1" />
+    <!-- สายฟ้า: ริ้วไฮไลต์ (gold) -->
+    <path d="M60,14 L36,50 L48,50 L40,82 L66,46 L52,46 Z" fill="#D9A441" />
+
+    <!-- หมวกครุย -->
+    <g transform="translate(56,15) rotate(-10.3)">
+      <!-- โดมหมวกสีฟ้าอ่อน โผล่ใต้แผ่น -->
+      <path d="M-11,8 A 11 9 0 0 0 11,8 Z" fill="#4FA8E0" />
+      <!-- แผ่นหมวก -->
+      <path d="M-26,0 L0,-9 L26,0 L0,9 Z" fill="#1B3A5C" />
+      <!-- เส้นไฮไลต์ขอบบน-ซ้าย -->
+      <path d="M-24,-0.8 L0,-8.6 L1.6,-7.8 L-22.4,0 Z" fill="#FFFFFF" opacity="0.22" />
+      <!-- ปุ่มกลางแผ่นหมวก + พู่ห้อย -->
+      <circle cx="0" cy="-9" r="2.2" fill="#D9A441" />
+      <line x1="0" y1="-9" x2="5" y2="28" stroke="#1B3A5C" stroke-width="2.6" stroke-linecap="round" />
+      <circle cx="5" cy="28" r="3.4" fill="#D9A441" />
+    </g>
+  </g>
+</svg>
