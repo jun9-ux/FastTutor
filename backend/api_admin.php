@@ -455,9 +455,9 @@ try {
         $avgScoreRow = $stmt->fetch(PDO::FETCH_ASSOC);
         $avgMatchScore = $avgScoreRow['avg_score'] !== null ? round((float)$avgScoreRow['avg_score'], 1) : null;
 
-        // วิชายอดนิยม 5 อันดับแรก (จากแมตช์ในช่วงที่กรอง) — กรองตามวันที่ได้
+        // วิชาที่มีการจับคู่ยืนยันแล้วมากที่สุด 5 อันดับแรกในช่วงที่กรอง
         $subjectWhere = $dateWhere;
-        array_unshift($subjectWhere, "subject IS NOT NULL", "subject != ''");
+        array_unshift($subjectWhere, "match_status = '1'", "subject IS NOT NULL", "subject != ''");
         $stmt = $pdo->prepare("
             SELECT subject, COUNT(*) AS cnt
             FROM match_table
@@ -534,7 +534,7 @@ try {
         usort($subjectGaps, fn($a, $b) => [$b['gap'], $b['demand']] <=> [$a['gap'], $a['demand']]);
         $subjectGaps = array_slice($subjectGaps, 0, 5);
 
-        // การใช้งานแชท (กรองตามวันที่ส่งข้อความ) และสัดส่วนแมตช์ที่ยืนยันแล้วมีการคุยกันจริง
+        // จำนวนข้อความยังคงกรองตามวันที่ส่งข้อความเพื่อรองรับผู้ใช้ API เดิม
         $chatWhere  = [];
         $chatParams = [];
         if ($startDate) { $chatWhere[] = "DATE(created_at) >= ?"; $chatParams[] = $startDate; }
@@ -552,10 +552,11 @@ try {
         ");
         $stmt->execute($dateParams);
         $wcRow = $stmt->fetch(PDO::FETCH_ASSOC);
-        // ห้องแชทที่ไม่มีการคุย = แมตช์ที่ยืนยันแล้ว (เปิดห้องแชทได้) แต่ยังไม่มีข้อความสักข้อความ
-        $silentChatRooms = (int)$wcRow['total'] - (int)$wcRow['with_chat'];
+        // ตัวเลขบนรายงานอ้างอิงคู่ที่ยืนยันในช่วงเดียวกับส่วนผลการจับคู่
+        $confirmedWithChatCount = (int)$wcRow['with_chat'];
+        $silentChatRooms = (int)$wcRow['total'] - $confirmedWithChatCount;
         $confirmedWithChatRate = ((int)$wcRow['total']) > 0
-            ? round(((int)$wcRow['with_chat']) * 100 / (int)$wcRow['total'], 1)
+            ? round($confirmedWithChatCount * 100 / (int)$wcRow['total'], 1)
             : null;
 
         echo json_encode([
@@ -581,7 +582,8 @@ try {
                 "rejection_rate"      => $rejectionRate,
                 "subject_gaps"        => $subjectGaps,
                 "chat_messages"       => (int)$chatRow['msgs'],
-                "chat_rooms"          => (int)$chatRow['rooms'],
+                "chat_rooms"          => $confirmedWithChatCount,
+                "confirmed_with_chat_count" => $confirmedWithChatCount,
                 "chat_rooms_silent"   => $silentChatRooms,
                 "confirmed_with_chat_rate" => $confirmedWithChatRate,
             ],

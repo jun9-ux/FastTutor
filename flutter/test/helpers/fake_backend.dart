@@ -49,6 +49,7 @@ class FakeBackend {
     ],
     'chat_messages': 40,
     'chat_rooms': 2,
+    'confirmed_with_chat_count': 2,
     'chat_rooms_silent': 1, // ยืนยัน 3 ห้อง คุยกัน 2 ห้อง (66.7%) ไม่คุย 1 ห้อง
     'confirmed_with_chat_rate': 66.7,
   };
@@ -271,8 +272,25 @@ class FakeBackend {
       case 'login.php':
         final u = body['username'];
         final p = body['password'];
+        final knownUser =
+            u == 'admin' ||
+            u == student['st_username'] ||
+            u == tutor['tu_username'];
+        if (!knownUser) {
+          return json({
+            'result': 0,
+            'error_code': 'user_not_found',
+            'message': 'ไม่พบบัญชีผู้ใช้นี้ กรุณาตรวจสอบชื่อผู้ใช้',
+            'datalist': null,
+          });
+        }
         if (p != goodPassword) {
-          return json({'result': 0, 'message': 'fail', 'datalist': null});
+          return json({
+            'result': 0,
+            'error_code': 'invalid_password',
+            'message': 'รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง',
+            'datalist': null,
+          });
         }
         if (u == 'admin') {
           return json(ok({'role': 'admin', 'datalist': admin}));
@@ -283,7 +301,12 @@ class FakeBackend {
         if (u == tutor['tu_username']) {
           return json(ok({'role': 'tutor', 'datalist': tutor}));
         }
-        return json({'result': 0, 'message': 'fail', 'datalist': null});
+        return json({
+          'result': 0,
+          'error_code': 'user_not_found',
+          'message': 'ไม่พบบัญชีผู้ใช้นี้ กรุณาตรวจสอบชื่อผู้ใช้',
+          'datalist': null,
+        });
 
       case 'api_admin.php':
         final action = body['action'];

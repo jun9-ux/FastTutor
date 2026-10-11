@@ -45,6 +45,7 @@
     }
 
     try {
+        $accountFound = false;
 
         // ============================================================
         // 🔹 1. เช็ค admin ก่อน (ตรวจสอบก่อน student / tutor)
@@ -52,6 +53,10 @@
         $stmt = $pdo->prepare("SELECT * FROM admin WHERE ad_username = :username");
         $stmt->execute(['username' => $username]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($user) {
+            $accountFound = true;
+        }
 
         if ($user && verifyAndUpgradePassword($pdo, $password, $user['ad_password'], 'admin', 'ad_password', 'admin_id', $user['admin_id'])) {
             $resp = json_encode([
@@ -77,6 +82,10 @@
         $stmt->execute(['username' => $username]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
+        if ($user) {
+            $accountFound = true;
+        }
+
         if ($user && verifyAndUpgradePassword($pdo, $password, $user['st_password'], 'student', 'st_password', 'student_id', $user['student_id'])) {
             $resp = json_encode([
                 "result"   => 1,
@@ -96,6 +105,10 @@
         $stmt->execute(['username' => $username]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
+        if ($user) {
+            $accountFound = true;
+        }
+
         if ($user && verifyAndUpgradePassword($pdo, $password, $user['tu_password'], 'tutor', 'tu_password', 'tutor_id', $user['tutor_id'])) {
             $resp = json_encode([
                 "result"   => 1,
@@ -109,13 +122,16 @@
         }
 
         // ============================================================
-        // ❌ ไม่เจอในทุกตาราง
+        // แยกกรณีไม่พบบัญชีออกจากกรณีรหัสผ่านไม่ถูกต้อง
         // ============================================================
         $resp = json_encode([
             "result"   => 0,
-            "message"  => "fail",
+            "error_code" => $accountFound ? "invalid_password" : "user_not_found",
+            "message"  => $accountFound
+                ? "รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง"
+                : "ไม่พบบัญชีผู้ใช้นี้ กรุณาตรวจสอบชื่อผู้ใช้",
             "datalist" => null
-        ]);
+        ], JSON_UNESCAPED_UNICODE);
         echo $resp;
         _log($content, $resp);
         exit();

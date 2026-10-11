@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'app_theme.dart';
@@ -129,7 +128,6 @@ class _AdminReportTabState extends State<AdminReportTab> {
           (report[key] as List? ?? []).map((e) => Map<String, dynamic>.from(e)),
         );
     final topSubjects = listOf('top_subjects');
-    final topTutors = listOf('top_tutors');
     final subjectGaps = listOf('subject_gaps');
     final successRate = report['success_rate'];
     final chatRate = report['confirmed_with_chat_rate'];
@@ -143,17 +141,15 @@ class _AdminReportTabState extends State<AdminReportTab> {
           _dateFilterBar(),
           const SizedBox(height: 16),
 
-          // 1) ภาพรวมผู้ใช้ (ค่าปัจจุบัน)
+          // 1) จำนวนผู้ใช้งาน (ค่าปัจจุบัน)
           _sectionCard(
-            title: 'ภาพรวมผู้ใช้',
+            title: 'จำนวนผู้ใช้งาน',
             icon: Icons.groups_outlined,
-            scope: 'ข้อมูลปัจจุบัน',
-            why:
-                'บอกขนาดระบบและสัดส่วนผู้เรียนต่อผู้สอน เพื่อดูว่าฝั่งใดขาดแคลน',
+            scope: 'ข้อมูล ณ ตอนนี้',
+            why: 'แสดงจำนวนสมาชิกแต่ละประเภทที่อยู่ในระบบตอนนี้',
             guide:
-                'ผู้เรียนมากกว่าผู้สอนมาก → คนหาผู้สอนไม่เจอ ควรรับสมัครติวเตอร์เพิ่ม\n'
-                'จำนวนออนไลน์น้อยผิดปกติ → ตรวจว่าแอปและระบบใช้งานได้ตามปกติ\n'
-                'ตัวเลขส่วนนี้เป็นค่า ณ ตอนนี้ ไม่ขึ้นกับช่วงวันที่ที่เลือก',
+                'ตัวเลขนี้เป็นจำนวนบัญชีทั้งหมดในระบบ จึงไม่เปลี่ยนตามช่วงวันที่ที่เลือก\n'
+                'หากผู้เรียนเพิ่มเร็วกว่าผู้สอน ควรดูส่วน “วิชาที่ขาดผู้สอน” ประกอบ',
             child: _metricGrid([
               _Metric(
                 'นักเรียนทั้งหมด',
@@ -167,89 +163,32 @@ class _AdminReportTabState extends State<AdminReportTab> {
                 Icons.person_pin_outlined,
                 Colors.indigo,
               ),
-              _Metric(
-                'นักเรียนออนไลน์ตอนนี้',
-                '${report['online_students'] ?? 0}',
-                Icons.wifi_tethering,
-                Colors.green,
-              ),
-              _Metric(
-                'ติวเตอร์ออนไลน์ตอนนี้',
-                '${report['online_tutors'] ?? 0}',
-                Icons.wifi_tethering,
-                Colors.teal,
-              ),
             ]),
           ),
           const SizedBox(height: 16),
 
-          // 2) ประสิทธิภาพการจับคู่
+          // 2) วิชาที่ขาดผู้สอน (ค่าปัจจุบัน)
           _sectionCard(
-            title: 'ประสิทธิภาพการจับคู่',
-            icon: Icons.pie_chart_outline,
-            scope: 'ตามช่วงวันที่',
-            why:
-                'เป็นตัวชี้วัดหลักว่าระบบจับคู่ช่วยให้คนได้เรียน/สอนจริงหรือไม่',
+            title: 'วิชาที่ขาดผู้สอน',
+            icon: Icons.person_search_outlined,
+            scope: 'ข้อมูล ณ ตอนนี้',
+            why: 'แสดงวิชาที่มีผู้เรียนรอมากกว่าจำนวนผู้สอนที่พร้อมรับ',
             guide:
-                'อัตราสำเร็จ = สำเร็จ ÷ (สำเร็จ + ปฏิเสธ) ไม่นับคำขอที่ยังรอยืนยันเพราะยังไม่มีผลตัดสิน\n'
-                'อัตราสำเร็จต่ำ/ปฏิเสธสูง → เงื่อนไขหรือคะแนนที่ใช้จับคู่อาจไม่ตรงความต้องการจริง\n'
-                'รอยืนยันเยอะ → อีกฝ่ายไม่ตอบ ควรเตือนให้ตอบคำขอ',
+                'จำนวนผู้สอนที่ยังขาด = ผู้เรียนที่กำลังหา − ผู้สอนที่พร้อมรับในวิชาเดียวกัน\n'
+                'วิชาที่ขาดมากควรได้รับการประชาสัมพันธ์หรือรับสมัครผู้สอนเพิ่ม\n'
+                'ระบบรวมชื่อวิชาที่ต่างกันเฉพาะตัวพิมพ์เล็ก–ใหญ่และช่องว่างหัวท้าย',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _metricGrid([
                   _Metric(
-                    'คำขอจับคู่ทั้งหมด',
-                    '${report['total_matches'] ?? 0}',
-                    Icons.swap_horiz_rounded,
-                    Colors.blueGrey,
-                  ),
-                  _Metric(
-                    'จับคู่สำเร็จ',
-                    '${report['confirmed_matches'] ?? confirmed}',
-                    Icons.handshake_outlined,
-                    _accent,
-                  ),
-                  _Metric(
-                    'อัตราสำเร็จ',
-                    successRate != null ? '$successRate%' : '-',
-                    Icons.trending_up_rounded,
-                    Colors.green,
-                  ),
-                ]),
-                if (successRate == null)
-                  _note(
-                    'ยังไม่มีคำขอที่ตัดสินแล้ว (สำเร็จ/ปฏิเสธ) ในช่วงนี้ จึงยังคำนวณอัตราสำเร็จไม่ได้',
-                  ),
-                const SizedBox(height: 16),
-                _matchStatusChart(pending, confirmed, rejected),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // 3) อุปสงค์–อุปทาน (ค่าปัจจุบัน)
-          _sectionCard(
-            title: 'อุปสงค์–อุปทาน',
-            icon: Icons.balance_outlined,
-            scope: 'ข้อมูลปัจจุบัน',
-            why: 'ชี้ว่าควรหาผู้สอนวิชาไหนเพิ่ม และมีคนรอจับคู่กี่คน',
-            guide:
-                'ส่วนต่าง = จำนวนผู้เรียนที่ต้องการ − จำนวนผู้สอนที่เปิดรับของวิชานั้น\n'
-                'ส่วนต่างสูง = วิชาที่มีคนรอแต่ไม่มีผู้สอน ควรประชาสัมพันธ์รับสมัครติวเตอร์วิชานั้น\n'
-                'ชื่อวิชาเป็นข้อความที่ผู้ใช้พิมพ์เอง จึงนับเฉพาะชื่อที่ตรงกัน (ไม่สนตัวพิมพ์เล็ก/ใหญ่และช่องว่างหัวท้าย)',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _metricGrid([
-                  _Metric(
-                    'ผู้เรียนที่รอจับคู่',
+                    'ผู้เรียนที่กำลังหาผู้สอน',
                     '${report['active_learn_count'] ?? 0}',
                     Icons.hourglass_empty_rounded,
                     Colors.deepOrange,
                   ),
                   _Metric(
-                    'ผู้สอนที่เปิดรับ',
+                    'ผู้สอนที่พร้อมรับผู้เรียน',
                     '${report['active_teach_count'] ?? 0}',
                     Icons.how_to_reg_outlined,
                     Colors.indigo,
@@ -257,7 +196,7 @@ class _AdminReportTabState extends State<AdminReportTab> {
                 ]),
                 const SizedBox(height: 16),
                 const Text(
-                  'วิชาที่ผู้เรียนต้องการมากกว่าผู้สอน',
+                  'จำนวนผู้สอนที่ยังขาดในแต่ละวิชา',
                   style: TextStyle(
                     fontSize: AppText.body,
                     fontWeight: FontWeight.w600,
@@ -266,72 +205,107 @@ class _AdminReportTabState extends State<AdminReportTab> {
                 ),
                 const SizedBox(height: 10),
                 subjectGaps.isEmpty
-                    ? _emptyText('ตอนนี้ไม่มีความต้องการเรียนที่เปิดอยู่')
+                    ? _emptyText('ตอนนี้ยังไม่มีผู้เรียนที่กำลังหาผู้สอน')
                     : _gapList(subjectGaps),
               ],
             ),
           ),
           const SizedBox(height: 16),
 
-          // 4) วิชายอดนิยม
+          // 3) ผลการจับคู่
           _sectionCard(
-            title: 'วิชายอดนิยม (แมตช์มากที่สุด)',
-            icon: Icons.bar_chart_outlined,
-            scope: 'ตามช่วงวันที่',
-            why:
-                'รู้ว่าวิชาไหนคือความต้องการหลักของตลาด เพื่อวางแผนเนื้อหาและโปรโมชัน',
+            title: 'ผลการจับคู่',
+            icon: Icons.handshake_outlined,
+            scope: 'ช่วงวันที่ที่เลือก',
+            why: 'สรุปจำนวนคำขอและผลการตอบรับในช่วงวันที่ที่เลือก',
             guide:
-                'เลือกช่วงวันที่ต่างกันเพื่อดูแนวโน้มตามฤดูกาล เช่น ช่วงก่อนสอบ',
-            child: topSubjects.isEmpty
-                ? _emptyText('ยังไม่มีข้อมูลการแมตช์')
-                : _rankedList(topSubjects, 'subject'),
-          ),
-          const SizedBox(height: 16),
-
-          // 5) ผู้สอนยอดนิยม
-          _sectionCard(
-            title: 'ผู้สอนยอดนิยม (แมตช์สำเร็จมากที่สุด)',
-            icon: Icons.star_border_rounded,
-            scope: 'ตามช่วงวันที่',
-            why:
-                'ยกย่องผู้สอนคุณภาพ และเฝ้าดูความเสี่ยงที่งานกระจุกตัวกับผู้สอนไม่กี่คน',
-            guide:
-                'ผู้สอนคนเดียวได้แมตช์เกินครึ่ง → เสี่ยงหากเขาออกจากระบบ ควรกระจายคู่ให้ผู้สอนคนอื่นหรือหาผู้สอนสำรอง',
-            child: topTutors.isEmpty
-                ? _emptyText('ยังไม่มีข้อมูลผู้สอนที่แมตช์สำเร็จ')
-                : _rankedList(topTutors, 'tutor_name'),
-          ),
-          const SizedBox(height: 16),
-
-          // 6) การใช้งานแชท
-          _sectionCard(
-            title: 'การใช้งานแชท',
-            icon: Icons.forum_outlined,
-            scope: 'ตามช่วงวันที่',
-            why:
-                'แมตช์สำเร็จแต่ไม่คุยกัน = จับคู่แล้วไม่เกิดการเรียนจริง ซึ่งดูจากจำนวนแมตช์อย่างเดียวไม่เห็น',
-            guide:
-                'ห้องแชทที่ไม่มีการคุยกัน = แมตช์ที่ยืนยันแล้ว (เปิดห้องแชทได้) แต่ยังไม่มีใครส่งข้อความสักข้อความ\n'
-                'ห้องที่ไม่มีการคุยกันมาก / สัดส่วนต่ำ → ผู้ใช้อาจไม่รู้ว่าต้องนัดหมายต่อหลังจับคู่ ควรปรับข้อความแจ้งเตือนหรือเพิ่มขั้นตอนนำทางหลังจับคู่สำเร็จ\n'
-                'นับจากแมตช์ที่ยืนยันในช่วงวันที่ที่เลือก',
+                'อัตราการยืนยันคำขอ = ยืนยันแล้ว ÷ (ยืนยันแล้ว + ปฏิเสธ)\n'
+                'คำขอที่รอการตอบรับยังไม่ถูกนำมาคำนวณ เพราะยังไม่มีผลตัดสิน\n'
+                'หากมีคำขอรอจำนวนมาก ควรแจ้งเตือนให้ผู้ใช้ตอบรับหรือปฏิเสธ',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _metricGrid([
                   _Metric(
-                    'ห้องแชทที่ไม่มีการคุยกัน',
+                    'คำขอทั้งหมด',
+                    '${report['total_matches'] ?? 0}',
+                    Icons.swap_horiz_rounded,
+                    Colors.blueGrey,
+                  ),
+                  _Metric(
+                    'ยืนยันจับคู่แล้ว',
+                    '${report['confirmed_matches'] ?? confirmed}',
+                    Icons.handshake_outlined,
+                    Colors.green,
+                  ),
+                  _Metric(
+                    'รอการตอบรับ',
+                    '$pending',
+                    Icons.schedule_outlined,
+                    Colors.orange,
+                  ),
+                  _Metric(
+                    'ปฏิเสธ',
+                    '$rejected',
+                    Icons.close_rounded,
+                    Colors.red,
+                  ),
+                ]),
+                const SizedBox(height: 12),
+                _rateSummary(successRate),
+                if (successRate == null)
+                  _note(
+                    'ยังไม่มีคำขอที่ได้รับการยืนยันหรือปฏิเสธ จึงยังคำนวณอัตราการยืนยันไม่ได้',
+                  ),
+                const SizedBox(height: 16),
+                _matchStatusChart(pending, confirmed, rejected),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // 4) วิชาที่มีการจับคู่มากที่สุด
+          _sectionCard(
+            title: 'วิชาที่มีการจับคู่มากที่สุด',
+            icon: Icons.bar_chart_outlined,
+            scope: 'ช่วงวันที่ที่เลือก',
+            why: 'จัดอันดับวิชาจากจำนวนการจับคู่ที่ได้รับการยืนยันแล้ว',
+            guide:
+                'ใช้ดูว่าวิชาใดเกิดการจับคู่จริงมากที่สุด\n'
+                'สามารถเปลี่ยนช่วงวันที่เพื่อเปรียบเทียบความต้องการในแต่ละช่วง เช่น ก่อนสอบ',
+            child: topSubjects.isEmpty
+                ? _emptyText('ยังไม่มีการจับคู่ที่ได้รับการยืนยันในช่วงนี้')
+                : _rankedList(topSubjects, 'subject'),
+          ),
+          const SizedBox(height: 16),
+
+          // 5) การติดต่อหลังจับคู่
+          _sectionCard(
+            title: 'การติดต่อหลังจับคู่',
+            icon: Icons.forum_outlined,
+            scope: 'ช่วงวันที่ที่เลือก',
+            why: 'ตรวจว่าคู่ที่ยืนยันแล้วเริ่มพูดคุยเพื่อนัดหมายกันหรือยัง',
+            guide:
+                'นับจากคู่ที่ยืนยันการจับคู่ในช่วงวันที่ที่เลือก\n'
+                'หากคู่ที่ยังไม่เริ่มสนทนามีจำนวนมาก ควรเพิ่มข้อความแนะนำหรือแจ้งเตือนให้เริ่มนัดหมาย',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _metricGrid([
+                  _Metric(
+                    'คู่ที่เริ่มสนทนาแล้ว',
+                    '${report['confirmed_with_chat_count'] ?? report['chat_rooms'] ?? 0}',
+                    Icons.meeting_room_outlined,
+                    Colors.indigo,
+                  ),
+                  _Metric(
+                    'คู่ที่ยังไม่เริ่มสนทนา',
                     '${report['chat_rooms_silent'] ?? 0}',
                     Icons.speaker_notes_off_outlined,
                     Colors.deepOrange,
                   ),
                   _Metric(
-                    'ห้องแชทที่มีการคุย',
-                    '${report['chat_rooms'] ?? 0}',
-                    Icons.meeting_room_outlined,
-                    Colors.indigo,
-                  ),
-                  _Metric(
-                    'แมตช์สำเร็จที่มีการคุยกัน',
+                    'อัตราคู่ที่เริ่มสนทนา',
                     chatRate != null ? '$chatRate%' : '-',
                     Icons.mark_chat_read_outlined,
                     Colors.green,
@@ -339,7 +313,7 @@ class _AdminReportTabState extends State<AdminReportTab> {
                 ]),
                 if (chatRate == null)
                   _note(
-                    'ยังไม่มีแมตช์ที่ยืนยันในช่วงนี้ จึงยังคำนวณสัดส่วนไม่ได้',
+                    'ยังไม่มีคู่ที่ยืนยันการจับคู่ในช่วงนี้ จึงยังคำนวณอัตราการเริ่มสนทนาไม่ได้',
                   ),
               ],
             ),
@@ -368,7 +342,7 @@ class _AdminReportTabState extends State<AdminReportTab> {
     ),
   );
 
-  /// รายการวิชาที่ผู้เรียนต้องการมากกว่าผู้สอน: ต้องการ/ผู้สอน/ส่วนต่าง
+  /// รายการวิชาที่มีผู้เรียนรอมากกว่าผู้สอนที่พร้อมรับ
   Widget _gapList(List<Map<String, dynamic>> items) {
     return Column(
       children: items.map((g) {
@@ -394,7 +368,7 @@ class _AdminReportTabState extends State<AdminReportTab> {
                       ),
                     ),
                     Text(
-                      'ต้องการเรียน $demand • ผู้สอน $supply',
+                      'ผู้เรียน $demand คน • ผู้สอน $supply คน',
                       style: const TextStyle(
                         fontSize: AppText.caption,
                         color: Colors.grey,
@@ -410,11 +384,11 @@ class _AdminReportTabState extends State<AdminReportTab> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: c.withOpacity(0.12),
+                  color: c.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  gap > 0 ? 'ขาดผู้สอน $gap' : 'ผู้สอนเพียงพอ',
+                  gap > 0 ? 'ยังขาด $gap คน' : 'มีผู้สอนเพียงพอ',
                   style: TextStyle(
                     fontSize: AppText.caption,
                     fontWeight: FontWeight.w600,
@@ -544,7 +518,7 @@ class _AdminReportTabState extends State<AdminReportTab> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -584,7 +558,7 @@ class _AdminReportTabState extends State<AdminReportTab> {
     required IconData icon,
     required Widget child,
     String? scope, // ขอบเขตข้อมูล: "ข้อมูลปัจจุบัน" หรือ "ตามช่วงวันที่"
-    String? why, // ทำไมแอดมินต้องดูส่วนนี้ (แสดงตลอด)
+    String? why, // คำอธิบายสั้น ๆ ของส่วนนี้ (แสดงตลอด)
     String? guide, // วิธีอ่านผลและควรทำอะไรต่อ (กดไอคอน ⓘ เพื่อกาง)
   }) {
     return Container(
@@ -595,7 +569,7 @@ class _AdminReportTabState extends State<AdminReportTab> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -648,6 +622,40 @@ class _AdminReportTabState extends State<AdminReportTab> {
     );
   }
 
+  Widget _rateSummary(dynamic successRate) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0F8F2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.trending_up_rounded, color: Colors.green),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text(
+              'อัตราการยืนยันคำขอ',
+              style: TextStyle(
+                fontSize: AppText.body,
+                color: AppColors.textDark,
+              ),
+            ),
+          ),
+          Text(
+            successRate != null ? '$successRate%' : '-',
+            style: const TextStyle(
+              fontSize: AppText.title,
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _matchStatusChart(int pending, int confirmed, int rejected) {
     final total = pending + confirmed + rejected;
     if (total == 0) {
@@ -665,31 +673,49 @@ class _AdminReportTabState extends State<AdminReportTab> {
     const pendingColor = Color(0xFFF59E0B);
     const rejectedColor = Color(0xFFE24B4A);
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 120,
-          height: 120,
-          child: CustomPaint(
-            painter: _DonutChartPainter(
-              values: [confirmed, pending, rejected],
-              colors: const [confirmedColor, pendingColor, rejectedColor],
+        const Text(
+          'สัดส่วนสถานะคำขอ',
+          style: TextStyle(
+            fontSize: AppText.body,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textDark,
+          ),
+        ),
+        const SizedBox(height: 10),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: SizedBox(
+            height: 12,
+            child: Row(
+              children: [
+                if (confirmed > 0)
+                  Expanded(
+                    flex: confirmed,
+                    child: Container(color: confirmedColor),
+                  ),
+                if (pending > 0)
+                  Expanded(
+                    flex: pending,
+                    child: Container(color: pendingColor),
+                  ),
+                if (rejected > 0)
+                  Expanded(
+                    flex: rejected,
+                    child: Container(color: rejectedColor),
+                  ),
+              ],
             ),
           ),
         ),
-        const SizedBox(width: 20),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _legendRow('ยืนยันแล้ว', confirmed, confirmedColor),
-              const SizedBox(height: 10),
-              _legendRow('รอยืนยัน', pending, pendingColor),
-              const SizedBox(height: 10),
-              _legendRow('ปฏิเสธแล้ว', rejected, rejectedColor),
-            ],
-          ),
-        ),
+        const SizedBox(height: 14),
+        _legendRow('ยืนยันจับคู่แล้ว', confirmed, confirmedColor),
+        const SizedBox(height: 8),
+        _legendRow('รอการตอบรับ', pending, pendingColor),
+        const SizedBox(height: 8),
+        _legendRow('ปฏิเสธ', rejected, rejectedColor),
       ],
     );
   }
@@ -725,7 +751,7 @@ class _AdminReportTabState extends State<AdminReportTab> {
   }
 }
 
-/// บรรทัด "ทำไมต้องดู" (แสดงตลอด) + ปุ่ม ⓘ กางคำแนะนำ "อ่านผลอย่างไร / ควรทำอะไรต่อ"
+/// คำอธิบายสั้น ๆ + ปุ่ม ⓘ สำหรับกางรายละเอียดเพิ่มเติม
 class _WhyBlock extends StatefulWidget {
   final String why;
   final String? guide;
@@ -750,16 +776,8 @@ class _WhyBlockState extends State<_WhyBlock> {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.only(top: 6),
-                child: Text.rich(
-                  TextSpan(
-                    children: [
-                      const TextSpan(
-                        text: 'ทำไมต้องดู: ',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      TextSpan(text: widget.why),
-                    ],
-                  ),
+                child: Text(
+                  widget.why,
                   style: const TextStyle(
                     fontSize: AppText.caption,
                     color: Color(0xFF666666),
@@ -793,7 +811,7 @@ class _WhyBlockState extends State<_WhyBlock> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'อ่านผลอย่างไร / ควรทำอะไรต่อ',
+                  'วิธีอ่านและสิ่งที่ควรทำ',
                   style: TextStyle(
                     fontSize: AppText.caption,
                     fontWeight: FontWeight.bold,
@@ -823,44 +841,4 @@ class _Metric {
   final IconData icon;
   final Color color;
   _Metric(this.label, this.value, this.icon, this.color);
-}
-
-/// วาดกราฟโดนัทแบบเรียบง่าย ไม่พึ่งพา package ภายนอก
-class _DonutChartPainter extends CustomPainter {
-  final List<int> values;
-  final List<Color> colors;
-  _DonutChartPainter({required this.values, required this.colors});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final total = values.fold<int>(0, (a, b) => a + b);
-    if (total == 0) return;
-
-    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
-    const strokeWidth = 22.0;
-    double startAngle = -math.pi / 2;
-
-    for (var i = 0; i < values.length; i++) {
-      if (values[i] <= 0) continue;
-      final sweep = (values[i] / total) * 2 * math.pi;
-      final paint = Paint()
-        ..color = colors[i]
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = strokeWidth
-        ..strokeCap = StrokeCap.butt;
-      canvas.drawArc(
-        rect.deflate(strokeWidth / 2),
-        startAngle,
-        sweep,
-        false,
-        paint,
-      );
-      startAngle += sweep;
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _DonutChartPainter oldDelegate) {
-    return oldDelegate.values != values || oldDelegate.colors != colors;
-  }
 }

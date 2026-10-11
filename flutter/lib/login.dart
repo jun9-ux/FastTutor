@@ -169,12 +169,30 @@ class _LoginState extends State<Login> with SingleTickerProviderStateMixin {
           );
         }
       } else {
+        final errorCode = respJson['error_code']?.toString();
+        final apiMessage = respJson['message']?.toString();
+        final message = switch (errorCode) {
+          'user_not_found' => 'ไม่พบบัญชีผู้ใช้นี้ กรุณาตรวจสอบชื่อผู้ใช้',
+          'invalid_password' => 'รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง',
+          _
+              when apiMessage != null &&
+                  apiMessage.isNotEmpty &&
+                  apiMessage.toLowerCase() != 'fail' =>
+            apiMessage,
+          _ => 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง',
+        };
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              respJson['message']?.toString() ?? 'เข้าสู่ระบบไม่สำเร็จ',
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 10),
+                Expanded(child: Text(message)),
+              ],
             ),
             backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
